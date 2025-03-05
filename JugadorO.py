@@ -21,6 +21,10 @@ try:
         turn = turn_reciever.recv()
         print("turno de jugador O")
         if turn == Special.GAME_OVER:
+            print("O ha perdido...")
+            break
+        elif turn == Special.DRAW:
+            print("es un empate!!! nadie gana.")
             break
         pos = pos_reciever.recv()
         myJugador.guardar_pos(pos)

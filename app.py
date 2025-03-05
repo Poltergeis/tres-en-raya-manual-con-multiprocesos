@@ -14,6 +14,7 @@ condiciones_de_victoria = [("1-1", "1-2", "1-3"), ("2-1", "2-2", "2-3"), ("3-1",
                            ("1-1", "2-2", "3-3"), ("1-3", "2-2", "3-1")]
 
 turno_actual = "o"
+juego_terminado = False
 casillas_marcadas: list[str] = []
 
 ctk = customtkinter.CTk()
@@ -41,6 +42,7 @@ MyManager.register("get_jugador_o_sender")
 MyManager.register("get_jugador_x_sender")
 MyManager.register("get_pos_sender")
 MyManager.register("get_ganador_reciever")
+MyManager.register("get_ganador_sender")
 MyManager.register("get_end_game_event")
 
 manager = MyManager.create_default()
@@ -50,15 +52,26 @@ jugador_o_sender = manager.get_jugador_o_sender()
 jugador_x_sender = manager.get_jugador_x_sender()
 pos_sender = manager.get_pos_sender()
 ganador_reciever = manager.get_ganador_reciever()
+ganador_sender = manager.get_ganador_sender()
 end_game_event = manager.get_end_game_event()
 
 def on_button_press(boton: customtkinter.CTkButton, casilla):
-    global turno_actual
+    global turno_actual, juego_terminado
+    
+    if juego_terminado:
+        return
+    
     if casilla in casillas_marcadas or boton.cget("text") != "^": 
         return
 
     boton.configure(text=turno_actual)
     casillas_marcadas.append(casilla)
+    
+    if len(casillas_marcadas) == 9:
+        end_game_event.set()
+        ganador_sender.send(Special.DRAW)
+        juego_terminado = True
+        return
 
     if turno_actual == "x":
         jugador_x_sender.send("turno de x")
@@ -86,11 +99,18 @@ def end_game_listener(label_victoria:customtkinter.CTkLabel, end_game_event, tur
     try:
         end_game_event.wait()
         j_ganador:Jugador = ganador_reciever.recv()
-        if j_ganador.nombre == "O":
+        mensaje = None
+        if j_ganador == Special.DRAW:
+            turn_x_sender.send(Special.DRAW)
+            turn_o_sender.send(Special.DRAW)
+            mensaje = "Es un empate!!!"
+        elif j_ganador.nombre == "O":
             turn_x_sender.send(Special.GAME_OVER)
+            mensaje = f"jugador {j_ganador.nombre} ha ganado!!!"
         else:
             turn_o_sender.send(Special.GAME_OVER)
-        label_victoria.configure(text=f"jugador {j_ganador.nombre} ha ganado!!!")
+            mensaje = f"jugador {j_ganador.nombre} ha ganado!!!"
+        label_victoria.configure(text=mensaje)
     except Exception:
         return
 
