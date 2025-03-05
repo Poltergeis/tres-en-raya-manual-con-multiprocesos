@@ -39,18 +39,18 @@ botones = []
 
 MyManager.register("get_jugador_o_sender")
 MyManager.register("get_jugador_x_sender")
-MyManager.register("get_end_game_reciever")
 MyManager.register("get_pos_sender")
 MyManager.register("get_ganador_reciever")
+MyManager.register("get_end_game_event")
 
 manager = MyManager.create_default()
 manager.connect()
 
 jugador_o_sender = manager.get_jugador_o_sender()
 jugador_x_sender = manager.get_jugador_x_sender()
-end_game_reciever = manager.get_end_game_reciever()
 pos_sender = manager.get_pos_sender()
 ganador_reciever = manager.get_ganador_reciever()
+end_game_event = manager.get_end_game_event()
 
 def on_button_press(boton: customtkinter.CTkButton, casilla):
     global turno_actual
@@ -82,11 +82,11 @@ label_victoria = customtkinter.CTkLabel(layout, text="---", width=int(screen_wid
                                         font=fuente_label_victoria)
 label_victoria.place(x=int(screen_width * 0.35), y=int(screen_height * 0.7))
 
-def end_game_listener(label_victoria:customtkinter.CTkLabel, end_game_reciever, manager, turn_o_sender, turn_x_sender, ganador_reciever):
+def end_game_listener(label_victoria:customtkinter.CTkLabel, end_game_event, turn_o_sender, turn_x_sender, ganador_reciever):
     try:
-        resultado:Literal["jugador_o", "jugador_x"] = end_game_reciever.recv()
+        end_game_event.wait()
         j_ganador:Jugador = ganador_reciever.recv()
-        if resultado == "jugador_o":
+        if j_ganador.nombre == "O":
             turn_x_sender.send(Special.GAME_OVER)
         else:
             turn_o_sender.send(Special.GAME_OVER)
@@ -94,7 +94,7 @@ def end_game_listener(label_victoria:customtkinter.CTkLabel, end_game_reciever, 
     except Exception:
         return
 
-end_game_listener_t = threading.Thread(target=end_game_listener, args=(label_victoria, end_game_reciever, manager, jugador_o_sender, jugador_x_sender, ganador_reciever))
+end_game_listener_t = threading.Thread(target=end_game_listener, args=(label_victoria, end_game_event, jugador_o_sender, jugador_x_sender, ganador_reciever))
 end_game_listener_t.start()
 
 ctk.mainloop()
